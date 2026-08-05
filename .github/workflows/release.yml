@@ -38,7 +38,7 @@ jobs:
           }
 
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm ci
 
       - name: Build and sign Tauri updater artifacts
         env:

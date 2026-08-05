@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+/* 画布设计令牌：QuickShell 无边框桌面 UI（深色石墨 + 冷青主色） */
+@theme {
+  --color-background: #0b0f14;
+  --color-foreground: #eef3fb;
+  --color-card: #131922;
+  --color-card-foreground: #eef3fb;
+  --color-popover: #171e29;
+  --color-popover-foreground: #eef3fb;
+  --color-primary: #8fd3ff;
+  --color-primary-foreground: #061019;
+  --color-muted: #1a202c;
+  --color-muted-foreground: #8b96aa;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-input: rgba(255, 255, 255, 0.08);
+  --color-ring: rgba(143, 211, 255, 0.38);
+  --color-state-success: #58d39b;
+  --color-state-warning: #f6b665;
+  --color-state-error: #f37a7a;
+  --color-state-info: #6ab5ff;
+  --color-surface-2: #171d28;
+  --color-surface-3: #1d2532;
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  --font-sans: "Noto Sans SC", "DengXian", "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  --font-mono: "Cascadia Mono", "Cascadia Code", "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+:root {
+  color-scheme: dark;
+  font-family: var(--font-sans);
+  background: var(--color-background);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body,
+#root,
+button,
+input,
+textarea,
+select,
+kbd {
+  font-family: var(--font-sans);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-size: 13px;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* 无边框窗口标题栏拖拽区（按钮除外） */
+[data-tauri-drag-region] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+[data-tauri-drag-region] [data-no-drag] {
+  -webkit-app-region: no-drag;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.qs-kbd {
+  display: inline-flex;
+  min-width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom-width: 2px;
+  border-bottom-color: rgba(0, 0, 0, 0.55);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.02) 100%),
+    #171d28;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 1px 2px rgba(0, 0, 0, 0.4);
+  color: #eef3fb;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.qs-kbd-sep {
+  color: var(--color-muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.capture-glow {
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 1px rgba(143, 211, 255, 0.18),
+    0 0 0 3px rgba(143, 211, 255, 0.05),
+    0 0 14px rgba(143, 211, 255, 0.1);
+}
+
+.pulse-dot {
+  position: relative;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background-color: var(--color-primary);
+}
+
+.pulse-dot::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  border-radius: 9999px;
+  background-color: var(--color-primary);
+  opacity: 0.5;
+  animation: qs-pulse 1.6s ease-out infinite;
+}
+
+@keyframes qs-pulse {
+  0% { transform: scale(1); opacity: 0.5; }
+  80%, 100% { transform: scale(2.6); opacity: 0; }
+}

@@ -4,7 +4,11 @@ import { updateStore } from '../features/update/updateStore';
 
 export const UpdateDialog = observer(function UpdateDialog() {
   const update = updateStore.pendingUpdate;
-  if (!update || !['available', 'installing'].includes(updateStore.status)) {
+  if (
+    !update ||
+    !updateStore.showUpdateDialog ||
+    !['available', 'installing'].includes(updateStore.status)
+  ) {
     return null;
   }
 

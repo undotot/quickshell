@@ -13,6 +13,7 @@ import {
   SquareTerminal,
   Terminal,
   RefreshCw,
+  ArrowUpCircle,
 } from 'lucide-react';
 import { listen } from '@tauri-apps/api/event';
 import { CommandStore } from '../features/commands/commandStore';
@@ -204,6 +205,9 @@ export const MainLauncher = observer(function MainLauncher() {
       listen('tray-open-shortcut-settings', () => {
         void handleOpenShortcutSettings();
       }),
+      listen('tray-check-updates', () => {
+        void updateStore.checkForUpdates(true, true);
+      }),
       listen<ShortcutChangeRequest>('shortcut-settings-requested', (event) => {
         const shortcut = event.payload?.shortcut?.trim();
         if (!shortcut) return;
@@ -250,6 +254,8 @@ export const MainLauncher = observer(function MainLauncher() {
 
   const pinnedCommands = filteredCommands.filter((command) => command.pinned);
   const normalCommands = filteredCommands.filter((command) => !command.pinned);
+  const availableUpdate =
+    updateStore.status === 'available' ? updateStore.pendingUpdate : null;
 
   useEffect(() => {
     setSelectedIndex(0);
@@ -331,6 +337,29 @@ export const MainLauncher = observer(function MainLauncher() {
         </label>
       </div>
 
+      {availableUpdate && (
+        <button
+          type="button"
+          onClick={() => void updateStore.installUpdate()}
+          aria-label={`更新到版本 ${availableUpdate.version}`}
+          className="mx-2.5 mb-2 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-2 text-left transition-colors hover:border-primary/55 hover:bg-primary/15 focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          <span aria-hidden="true" className="pulse-dot" />
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-1.5 text-[11px] font-semibold text-primary">
+              <ArrowUpCircle size={13} />
+              <span>发现新版本 {availableUpdate.version}</span>
+            </span>
+            <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
+              {availableUpdate.body || '点击立即下载并安装更新'}
+            </span>
+          </span>
+          <span className="shrink-0 rounded-md bg-primary px-2 py-1 text-[10px] font-semibold text-primary-foreground">
+            立即更新
+          </span>
+        </button>
+      )}
+
       {/* 命令列表（主滚动区） */}
       <div className="min-h-0 flex-1 overflow-y-auto px-2.5 pb-2.5 pt-0.5">
         {commandStore.isLoading ? (
@@ -393,11 +422,20 @@ export const MainLauncher = observer(function MainLauncher() {
               ))}
           </span>
           <span className="shrink-0 whitespace-nowrap">唤起</span>
+          {updateStore.noticeMessage && (
+            <span
+              role="status"
+              aria-live="polite"
+              className="max-w-[108px] truncate rounded-md bg-state-success/10 px-1.5 py-1 text-[10px] text-state-success"
+            >
+              {updateStore.noticeMessage}
+            </span>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-0.5">
           <button
             type="button"
-            onClick={() => void updateStore.checkForUpdates(true)}
+            onClick={() => void updateStore.checkForUpdates(true, true)}
             disabled={updateStore.status === 'checking' || updateStore.status === 'installing'}
             aria-label="检查更新"
             title={updateStore.status === 'error' ? updateStore.errorMessage : '检查更新'}

@@ -19,7 +19,10 @@ class UpdateStore {
   pendingUpdate: Update | null = null;
   progress = 0;
   errorMessage = '';
+  showUpdateDialog = false;
+  noticeMessage = '';
   lastCheckedAt = 0;
+  private noticeSequence = 0;
 
   constructor() {
     makeAutoObservable(this, { pendingUpdate: false }, { autoBind: true });
@@ -30,7 +33,7 @@ class UpdateStore {
     return this.pendingUpdate !== null;
   }
 
-  async checkForUpdates(force = false): Promise<void> {
+  async checkForUpdates(force = false, showDialog = false): Promise<void> {
     if (!isDesktopRuntime()) {
       this.status = 'unsupported';
       return;
@@ -46,6 +49,8 @@ class UpdateStore {
 
     this.status = 'checking';
     this.errorMessage = '';
+    this.showUpdateDialog = false;
+    this.noticeMessage = '';
 
     try {
       const update = await check({ timeout: 15_000 });
@@ -56,6 +61,10 @@ class UpdateStore {
         this.lastCheckedAt = checkedAt;
         this.pendingUpdate = update;
         this.status = update ? 'available' : 'idle';
+        this.showUpdateDialog = showDialog && update !== null;
+        if (!update) {
+          this.showLatestNotice();
+        }
       });
     } catch (error) {
       runInAction(() => {
@@ -72,6 +81,7 @@ class UpdateStore {
     }
 
     this.status = 'installing';
+    this.showUpdateDialog = true;
     this.progress = 0;
     this.errorMessage = '';
 
@@ -107,10 +117,19 @@ class UpdateStore {
   }
 
   dismissUpdate(): void {
-    this.pendingUpdate = null;
-    if (this.status === 'available') {
-      this.status = 'idle';
-    }
+    this.showUpdateDialog = false;
+  }
+
+  private showLatestNotice(): void {
+    const sequence = ++this.noticeSequence;
+    this.noticeMessage = '当前已是最新版本';
+
+    window.setTimeout(() => {
+      if (this.noticeSequence !== sequence) return;
+      runInAction(() => {
+        this.noticeMessage = '';
+      });
+    }, 4_000);
   }
 
   private readLastCheckedAt(): number {

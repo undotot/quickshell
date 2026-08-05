@@ -50,6 +50,8 @@ pub fn run() {
         ])
         .setup(|app| {
             let show_main = MenuItem::with_id(app, "show-main", "显示主窗口", true, None::<&str>)?;
+            let check_updates =
+                MenuItem::with_id(app, "check-updates", "检查更新", true, None::<&str>)?;
             let manage_commands =
                 MenuItem::with_id(app, "manage-commands", "管理命令", true, None::<&str>)?;
             let shortcut_settings =
@@ -60,6 +62,7 @@ pub fn run() {
                 app,
                 &[
                     &show_main,
+                    &check_updates,
                     &manage_commands,
                     &shortcut_settings,
                     &separator,
@@ -74,6 +77,7 @@ pub fn run() {
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "show-main" => focus_main_window(app),
+                    "check-updates" => emit_main_event(app, "tray-check-updates"),
                     "manage-commands" => emit_main_event(app, "tray-open-manager"),
                     "shortcut-settings" => emit_main_event(app, "tray-open-shortcut-settings"),
                     "quit" => app.exit(0),

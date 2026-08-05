@@ -20,17 +20,13 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 24
-          cache: yarn
+          cache: npm
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Enable Corepack
-        shell: pwsh
-        run: corepack enable
-
       - name: Configure public package registry
-        run: yarn config set registry https://registry.npmjs.org
+        run: npm config set registry https://registry.npmjs.org
 
       - name: Verify release version
         shell: pwsh
@@ -42,19 +38,19 @@ jobs:
           }
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile --network-timeout 120000
+        run: npm ci --no-audit --no-fund
 
       - name: Build and sign Tauri updater artifacts
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: yarn tauri build
+        run: npm run tauri build
 
       - name: Generate updater manifest
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
-        run: yarn release:manifest
+        run: npm run release:manifest
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v3

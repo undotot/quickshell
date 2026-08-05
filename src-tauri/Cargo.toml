@@ -1,6 +1,6 @@
 [package]
 name = "quickshell"
-version = "0.1.4"
+version = "0.1.5"
 description = "A lightweight interactive Windows shell launcher"
 authors = ["QuickShell"]
 edition = "2021"

@@ -7,15 +7,15 @@
 ## 开发
 
 ```powershell
-yarn install
-yarn tauri dev
+npm install
+npm run tauri dev
 ```
 
 ## 构建
 
 ```powershell
-yarn build
-yarn tauri build
+npm run build
+npm run tauri build
 ```
 
 核心交互由 Rust PTY 与 Windows ConPTY 提供，React 仅负责终端渲染、命令管理和配置界面。

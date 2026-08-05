@@ -40,9 +40,26 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Validate updater signing secrets
+        shell: pwsh
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY)) {
+            throw "TAURI_SIGNING_PRIVATE_KEY is missing"
+          }
+          if ($env:TAURI_SIGNING_PRIVATE_KEY.Length -lt 300) {
+            throw "TAURI_SIGNING_PRIVATE_KEY appears incomplete; paste the full private key file content"
+          }
+          if ([string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD)) {
+            throw "TAURI_SIGNING_PRIVATE_KEY_PASSWORD is missing"
+          }
+
       - name: Build and sign Tauri updater artifacts
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npm run tauri build
 
       - name: Generate updater manifest
@@ -50,6 +67,15 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
         run: npm run release:manifest
+
+      - name: Verify updater artifacts
+        shell: pwsh
+        run: |
+          $bundlePath = Join-Path $PWD "src-tauri/target/release/bundle/nsis"
+          $zip = Get-ChildItem -LiteralPath $bundlePath -Filter "*.nsis.zip" -File
+          $sig = Get-ChildItem -LiteralPath $bundlePath -Filter "*.nsis.zip.sig" -File
+          if (-not $zip) { throw "NSIS updater bundle (.nsis.zip) was not generated" }
+          if (-not $sig) { throw "NSIS updater signature (.nsis.zip.sig) was not generated" }
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v3

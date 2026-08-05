@@ -32,6 +32,8 @@ fn emit_main_event(app: &AppHandle, event: &str) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         // 必须在其他插件之前注册，第二次启动时由插件转发参数并退出新进程。
         // 这里把已有主窗口唤起，确保从开始菜单、桌面快捷方式重复启动时行为一致。
         .plugin(init_single_instance(|app, _argv, _cwd| {

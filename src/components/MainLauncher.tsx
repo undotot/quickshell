@@ -12,6 +12,7 @@ import {
   ShieldAlert,
   SquareTerminal,
   Terminal,
+  RefreshCw,
 } from 'lucide-react';
 import { listen } from '@tauri-apps/api/event';
 import { CommandStore } from '../features/commands/commandStore';
@@ -22,6 +23,7 @@ import {
   openShellWindow,
   notifyShortcutChangeResult,
 } from '../features/shared/tauri';
+import { updateStore } from '../features/update/updateStore';
 import type {
   CommandProfile,
   ShellProfile,
@@ -30,6 +32,7 @@ import type {
 import { TitleBar } from './TitleBar';
 import { formatShortcut } from './ShortcutSettingsPopover';
 import { ConfirmDialog } from './ConfirmDialog';
+import { UpdateDialog } from './UpdateDialog';
 
 const commandStore = new CommandStore();
 
@@ -222,6 +225,14 @@ export const MainLauncher = observer(function MainLauncher() {
     };
   }, [handleOpenManager, handleOpenShortcutSettings]);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void updateStore.checkForUpdates();
+    }, 5_000);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const shellMap = useMemo(
     () => new Map(commandStore.shells.map((shell) => [shell.id, shell])),
     [commandStore.shells],
@@ -386,6 +397,22 @@ export const MainLauncher = observer(function MainLauncher() {
         <div className="flex shrink-0 items-center gap-0.5">
           <button
             type="button"
+            onClick={() => void updateStore.checkForUpdates(true)}
+            disabled={updateStore.status === 'checking' || updateStore.status === 'installing'}
+            aria-label="检查更新"
+            title={updateStore.status === 'error' ? updateStore.errorMessage : '检查更新'}
+            className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-1.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-wait disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            <RefreshCw
+              size={12}
+              className={updateStore.status === 'checking' ? 'animate-spin' : undefined}
+            />
+            <span className="sr-only">
+              {updateStore.status === 'checking' ? '检查中' : '检查更新'}
+            </span>
+          </button>
+          <button
+            type="button"
             onClick={() => void handleOpenShortcutSettings()}
             aria-label="快捷键设置"
             className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-1.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
@@ -413,6 +440,7 @@ export const MainLauncher = observer(function MainLauncher() {
         onConfirm={() => void handleConfirmRun()}
         onCancel={handleCancelRun}
       />
+      <UpdateDialog />
     </div>
   );
 });

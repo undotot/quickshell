@@ -29,6 +29,9 @@ jobs:
         shell: pwsh
         run: corepack enable
 
+      - name: Configure public package registry
+        run: yarn config set registry https://registry.npmjs.org
+
       - name: Verify release version
         shell: pwsh
         run: |
@@ -39,7 +42,7 @@ jobs:
           }
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install --frozen-lockfile --network-timeout 120000
 
       - name: Build and sign Tauri updater artifacts
         env:

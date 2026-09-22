@@ -31,7 +31,8 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"]
+    "targets": ["nsis"],
+    "createUpdaterArtifacts": "v1Compatible"
   },
   "plugins": {
     "updater": {

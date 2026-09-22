@@ -123,11 +123,16 @@ pub fn run() {
         .setup(|app| {
             let show_main =
                 MenuItem::with_id(app, "show-main", "打开 QuickShell", true, None::<&str>)?;
+            let check_updates =
+                MenuItem::with_id(app, "check-updates", "检查更新", true, None::<&str>)?;
             let manage = MenuItem::with_id(app, "manage-commands", "管理命令", true, None::<&str>)?;
             let settings = MenuItem::with_id(app, "settings", "设置", true, None::<&str>)?;
             let separator = PredefinedMenuItem::separator(app)?;
             let quit = MenuItem::with_id(app, "quit", "退出 QuickShell", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show_main, &manage, &settings, &separator, &quit])?;
+            let menu = Menu::with_items(
+                app,
+                &[&show_main, &check_updates, &manage, &settings, &separator, &quit],
+            )?;
 
             TrayIconBuilder::with_id("main-tray")
                 .icon(app.default_window_icon().unwrap().clone())
@@ -136,6 +141,9 @@ pub fn run() {
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "show-main" => show_palette(app),
+                    "check-updates" => {
+                        let _ = app.emit_to("main", "tray-check-updates", ());
+                    }
                     "manage-commands" => request_manage(app),
                     "settings" => {
                         let _ = app.emit_to("main", "tray-open-settings", ());

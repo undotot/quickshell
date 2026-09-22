@@ -9,6 +9,7 @@ import {
 } from 'react';
 import {
   ArrowLeft,
+  ArrowUpCircle,
   GitBranch,
   Pin,
   Play,
@@ -24,6 +25,7 @@ import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { CommandStore } from '../features/commands/commandStore';
 import { settingsStore } from '../features/settings/settingsStore';
+import { updateStore } from '../features/update/updateStore';
 import { useCommandRunner } from '../features/commands/useCommandRunner';
 import type { CommandExtension, CommandProfile, ShellProfile } from '../features/shared/types';
 import { EXTENSION_TOKEN } from '../features/commands/commandTemplate';
@@ -37,6 +39,7 @@ import {
 import type { ShortcutChangeRequest } from '../features/shared/types';
 import { CommandParametersDialog } from './CommandParametersDialog';
 import { ConfirmDialog } from './ConfirmDialog';
+import { UpdateDialog } from './UpdateDialog';
 
 const commandStore = new CommandStore();
 
@@ -174,6 +177,8 @@ export const CommandPalette = observer(function CommandPalette() {
   useEffect(() => {
     void commandStore.initialize();
     void settingsStore.initialize(true);
+    // 启动时静默检查更新；store 内部按 24 小时间隔去重。
+    void updateStore.checkForUpdates();
     if (!isDesktopRuntime()) return;
 
     let disposers: Array<() => void> = [];
@@ -215,6 +220,9 @@ export const CommandPalette = observer(function CommandPalette() {
       }),
       listen('tray-open-settings', () => {
         void openSettingsWindow('shortcut').catch(() => undefined);
+      }),
+      listen('tray-check-updates', () => {
+        void updateStore.checkForUpdates(true, true);
       }),
       listen<ShortcutChangeRequest>('shortcut-settings-requested', (event) => {
         const shortcut = event.payload?.shortcut?.trim();
@@ -582,6 +590,8 @@ export const CommandPalette = observer(function CommandPalette() {
   };
 
   const displayError = editorError || commandStore.errorMessage || errorMessage;
+  const availableUpdate =
+    updateStore.status === 'available' ? updateStore.pendingUpdate : null;
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-window text-foreground">
@@ -676,6 +686,28 @@ export const CommandPalette = observer(function CommandPalette() {
             </div>
 
             <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto p-3">
+              {availableUpdate && (
+                <button
+                  type="button"
+                  onClick={() => void updateStore.installUpdate()}
+                  aria-label={`更新到版本 ${availableUpdate.version}`}
+                  className="mb-2 flex w-full items-center gap-2 rounded-lg border border-primary/30 bg-primary-soft px-3 py-2 text-left transition-colors hover:border-primary/55 focus-visible:outline-2 focus-visible:outline-ring"
+                >
+                  <span aria-hidden="true" className="pulse-dot" />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-1.5 text-[11px] font-semibold text-primary">
+                      <ArrowUpCircle size={13} />
+                      <span>发现新版本 {availableUpdate.version}</span>
+                    </span>
+                    <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
+                      {availableUpdate.body || '点击立即下载并安装更新'}
+                    </span>
+                  </span>
+                  <span className="shrink-0 rounded-md bg-primary px-2 py-1 text-[10px] font-semibold text-on-primary">
+                    立即更新
+                  </span>
+                </button>
+              )}
               {showManageHint && query === '' && !commandStore.isLoading && (
                 <div className="mb-2 flex items-center gap-2 rounded-lg border border-primary/25 bg-primary-soft px-3 py-2">
                   <SquarePen size={13} className="shrink-0 text-primary" aria-hidden="true" />
@@ -848,7 +880,18 @@ export const CommandPalette = observer(function CommandPalette() {
                   管理命令
                 </button>
               </span>
-              <span>{commandStore.visibleCommands.length} 条命令</span>
+              <span className="flex items-center gap-2">
+                {updateStore.noticeMessage && (
+                  <span
+                    role="status"
+                    aria-live="polite"
+                    className="max-w-[140px] truncate rounded-md bg-state-success-soft px-1.5 py-1 text-[10px] text-state-success"
+                  >
+                    {updateStore.noticeMessage}
+                  </span>
+                )}
+                <span>{commandStore.visibleCommands.length} 条命令</span>
+              </span>
             </footer>
           </>
         ) : (
@@ -1182,6 +1225,8 @@ export const CommandPalette = observer(function CommandPalette() {
           onSubmit={handleParameterSubmit}
           onCancel={cancelParameters}
         />
+
+        <UpdateDialog />
 
         <ConfirmDialog
           open={pendingDiscard !== null}

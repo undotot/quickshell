@@ -6,9 +6,14 @@ describe('QuickShell 默认配置', () => {
     expect(defaultCommands.some((command) => command.shellId === 'git-bash')).toBe(true);
   });
 
-  it('使用轻量的终端默认配置', () => {
-    expect(defaultSettings.theme).toBe('dark');
-    expect(defaultSettings.fontSize).toBeGreaterThanOrEqual(8);
-    expect(defaultSettings.scrollback).toBeGreaterThan(0);
+  it('使用跟随系统的默认主题与默认快捷键', () => {
+    expect(defaultSettings.theme).toBe('system');
+    expect(defaultSettings.globalShortcut).toBe('CommandOrControl+Space');
+  });
+
+  it('命令配置只保留快捷运行所需字段', () => {
+    for (const command of defaultCommands) {
+      expect(Object.keys(command).sort()).toEqual(['command', 'cwd', 'id', 'name', 'pinned', 'shellId']);
+    }
   });
 });

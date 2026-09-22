@@ -12,6 +12,7 @@
     "core:window:allow-start-dragging",
     "core:window:allow-hide",
     "core:window:allow-is-minimized",
+    "core:window:allow-is-focused",
     "core:window:allow-is-visible",
     "core:window:allow-show",
     "core:window:allow-unminimize",

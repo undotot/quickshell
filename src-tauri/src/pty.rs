@@ -9,7 +9,7 @@ use std::os::windows::process::CommandExt;
 
 use crate::{
     error::{message, AppResult},
-    models::ShellProfile,
+    models::{CommandExecutionResult, ShellProfile},
 };
 
 #[cfg(windows)]
@@ -22,7 +22,11 @@ const CREATE_NO_WINDOW: u32 = 0x08000000;
 ///
 /// Shell 自己拥有真实控制台，用户可以直接输入密码或后续命令，QuickShell
 /// 主进程不参与控制台输入输出转发，因此不会因为终端初始化影响主窗口。
-pub fn launch_shell_process(shell_id: &str, cwd: &str, initial_command: &str) -> AppResult<()> {
+pub fn launch_shell_process(
+    shell_id: &str,
+    cwd: &str,
+    initial_command: &str,
+) -> AppResult<CommandExecutionResult> {
     let (profile, executable, mut args) = resolve_shell(shell_id)?;
     let working_directory = resolve_cwd(cwd)?;
     append_initial_command(&profile.id, &mut args, initial_command.trim());
@@ -49,7 +53,12 @@ pub fn launch_shell_process(shell_id: &str, cwd: &str, initial_command: &str) ->
 
     process
         .spawn()
-        .map(|_| ())
+        .map(|_| CommandExecutionResult {
+            started: true,
+            // 当前使用独立控制台并立即返回，暂时无法知道命令最终退出码。
+            success: None,
+            exit_code: None,
+        })
         .map_err(|error| message(format!("打开 {} 失败：{error}", profile.name)))
 }
 
@@ -125,7 +134,7 @@ fn detect_shells_uncached() -> Vec<ShellProfile> {
     vec![cmd, powershell, pwsh, git_bash]
 }
 
-fn resolve_shell(shell_id: &str) -> AppResult<(ShellProfile, String, Vec<String>)> {
+pub(crate) fn resolve_shell(shell_id: &str) -> AppResult<(ShellProfile, String, Vec<String>)> {
     let profile = detect_shells()
         .into_iter()
         .find(|shell| shell.id == shell_id)

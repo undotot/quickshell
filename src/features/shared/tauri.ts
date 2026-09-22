@@ -5,14 +5,21 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { register, unregister } from '@tauri-apps/plugin-global-shortcut';
 import type {
   AppSettings,
+  CommandExecutionResult,
   CommandProfile,
+  CommandRuntimeValues,
   ShellProfile,
   ShortcutChangeRequest,
   ShortcutChangeResult,
+  ThemeChangeRequest,
+  ThemeMode,
 } from './types';
 
 const childWindows = new Map<string, WebviewWindow>();
 let registeredShortcut: string | null = null;
+
+// 快捷键由 Tauri 原生处理器负责显隐；JS 回调仅用于满足动态注册 API 的签名。
+const handleGlobalShortcutEvent = (): void => undefined;
 
 export const isDesktopRuntime = (): boolean => '__TAURI_INTERNALS__' in window;
 
@@ -32,9 +39,15 @@ export const loadCommandProfiles = (): Promise<CommandProfile[]> =>
 export const saveCommandProfiles = (commands: CommandProfile[]): Promise<void> =>
   invokeDesktop('save_command_profiles', { commands });
 
+export const loadCommandRuntimeValues = (): Promise<CommandRuntimeValues> =>
+  invokeDesktop('load_command_runtime_values');
+
+export const saveCommandRuntimeValues = (values: CommandRuntimeValues): Promise<void> =>
+  invokeDesktop('save_command_runtime_values', { values });
+
 export const notifyCommandsChanged = async (): Promise<void> => {
   if (isDesktopRuntime()) {
-    await emitTo('main', 'commands-changed');
+    await emitTo('main', 'commands-changed').catch(() => undefined);
   }
 };
 
@@ -47,8 +60,18 @@ export const requestGlobalShortcutChange = async (shortcut: string): Promise<voi
 
 export const notifyShortcutChangeResult = async (result: ShortcutChangeResult): Promise<void> => {
   if (isDesktopRuntime()) {
-    await emitTo('shortcut-settings', 'shortcut-settings-result', result);
+    await emitTo('settings', 'shortcut-settings-result', result);
   }
+};
+
+/** 主题是全局偏好，任一个窗口改动后广播到所有窗口。 */
+export const notifyThemeChanged = async (theme: ThemeMode): Promise<void> => {
+  if (!isDesktopRuntime()) return;
+  const payload: ThemeChangeRequest = { theme };
+  await Promise.allSettled([
+    emitTo('main', 'theme-changed', payload),
+    emitTo('settings', 'theme-changed', payload),
+  ]);
 };
 
 export const loadAppSettings = (): Promise<AppSettings> => invokeDesktop('load_app_settings');
@@ -64,16 +87,9 @@ export const showMainWindow = async (): Promise<void> => {
   await window.setFocus();
 };
 
-export const toggleMainWindow = async (): Promise<void> => {
+export const hideCurrentWindow = async (): Promise<void> => {
   if (!isDesktopRuntime()) return;
-  const window = getCurrentWindow();
-  const isVisible = await window.isVisible();
-  const isMinimized = await window.isMinimized();
-  if (isVisible && !isMinimized) {
-    await window.hide();
-    return;
-  }
-  await showMainWindow();
+  await getCurrentWindow().hide();
 };
 
 export const setGlobalShortcut = async (shortcut: string): Promise<void> => {
@@ -87,20 +103,12 @@ export const setGlobalShortcut = async (shortcut: string): Promise<void> => {
   }
 
   try {
-    await register(shortcut, (event) => {
-      if (event.state === 'Pressed') {
-        void toggleMainWindow();
-      }
-    });
+    await register(shortcut, handleGlobalShortcutEvent);
     registeredShortcut = shortcut;
   } catch (error) {
     if (previousShortcut) {
       try {
-        await register(previousShortcut, (event) => {
-          if (event.state === 'Pressed') {
-            void toggleMainWindow();
-          }
-        });
+        await register(previousShortcut, handleGlobalShortcutEvent);
         registeredShortcut = previousShortcut;
       } catch {
         registeredShortcut = null;
@@ -110,11 +118,12 @@ export const setGlobalShortcut = async (shortcut: string): Promise<void> => {
   }
 };
 
+/** 在独立系统控制台中启动命令；QuickShell 不参与控制台输入输出。 */
 export const launchShellProcess = (params: {
   shellId: string;
   cwd: string;
   initialCommand: string;
-}): Promise<void> => invokeDesktop('launch_shell_process', params);
+}): Promise<CommandExecutionResult> => invokeDesktop('launch_shell_process', params);
 
 export const closeCurrentWindow = async (): Promise<void> => {
   if (isDesktopRuntime()) {
@@ -124,32 +133,19 @@ export const closeCurrentWindow = async (): Promise<void> => {
   window.close();
 };
 
-export const openCommandManagerWindow = async (): Promise<void> => {
-  await openChildWindow('command-manager', '管理命令', 'index.html?view=manager', {
-    width: 980,
-    height: 720,
-    minWidth: 720,
-    minHeight: 460,
-    resizable: true,
-  });
-};
+export type SettingsSection = 'shortcut' | 'updates' | 'appearance';
 
-export const openShortcutSettingsWindow = async (): Promise<void> => {
-  await openChildWindow('shortcut-settings', '快捷键设置', 'index.html?view=shortcut-settings', {
-    width: 380,
-    height: 460,
-    minWidth: 340,
-    minHeight: 380,
+export const openSettingsWindow = async (section: SettingsSection = 'shortcut'): Promise<void> => {
+  await openChildWindow('settings', 'QuickShell 设置', `index.html?view=settings&section=${section}`, {
+    width: 520,
+    height: 600,
+    minWidth: 480,
+    minHeight: 560,
     resizable: false,
   });
-};
-
-export const openShellWindow = async (command: CommandProfile): Promise<void> => {
-  await launchShellProcess({
-    shellId: command.shellId,
-    cwd: command.cwd,
-    initialCommand: command.command,
-  });
+  if (isDesktopRuntime()) {
+    await emitTo('settings', 'settings-section-requested', section).catch(() => undefined);
+  }
 };
 
 async function openChildWindow(
@@ -171,6 +167,7 @@ async function openChildWindow(
   const existing = childWindows.get(label);
   if (existing) {
     try {
+      await existing.unminimize();
       await existing.show();
       await existing.setFocus();
       return existing;
@@ -199,6 +196,31 @@ async function openChildWindow(
   void child.once('tauri://error', (event) => {
     console.error(`子窗口 ${title} 创建失败：`, event.payload);
     childWindows.delete(label);
+  });
+
+  // 等待窗口真正创建完成，避免连续打开时第二次请求仍然读到“未显示”。
+  await new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const timeout = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error('子窗口创建超时'));
+    }, 5000);
+    const resolveCreated = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      resolve();
+    };
+    const rejectCreation = (event: { payload: unknown }) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      reject(new Error(String(event.payload)));
+    };
+
+    void child.once('tauri://created', resolveCreated);
+    void child.once('tauri://error', rejectCreation);
   });
 
   return child;

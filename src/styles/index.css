@@ -1,27 +1,138 @@
 @import "tailwindcss";
 
-/* 画布设计令牌：QuickShell 无边框桌面 UI（深色石墨 + 冷青主色） */
-@theme {
-  --color-background: #0b0f14;
-  --color-foreground: #eef3fb;
-  --color-card: #131922;
-  --color-card-foreground: #eef3fb;
-  --color-popover: #171e29;
-  --color-popover-foreground: #eef3fb;
-  --color-primary: #8fd3ff;
-  --color-primary-foreground: #061019;
-  --color-muted: #1a202c;
-  --color-muted-foreground: #8b96aa;
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-input: rgba(255, 255, 255, 0.08);
-  --color-ring: rgba(143, 211, 255, 0.38);
-  --color-state-success: #58d39b;
-  --color-state-warning: #f6b665;
-  --color-state-error: #f37a7a;
-  --color-state-info: #6ab5ff;
-  --color-surface-2: #171d28;
-  --color-surface-3: #1d2532;
+/* ============================================================================
+   QuickShell 设计令牌
+   来源：Ardot 变量集 Theme（Dark / Light 两个模式，22 个 COLOR 变量）
+   https://ardot.tencent.com/file/727767426440792
 
+   约定：
+   - 原始值只以 --qs-* 形式定义一次，主题差异全部收在这一层
+   - 通过 @theme inline 映射到 Tailwind 命名空间，utilities 直接内联 var(--qs-*)
+   - 深色为默认（:root），浅色由 <html data-theme="light"> 覆盖
+   ========================================================================== */
+
+:root,
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* 底层 */
+  --qs-bg: #0a0f14;
+  --qs-window: #121a21;
+  --qs-rail: #171c29;
+  --qs-chip: #1c2633;
+  --qs-code: #121721;
+
+  /* 文字三级 */
+  --qs-text: #edf2fa;
+  --qs-text-muted: #8c96ab;
+  --qs-text-subtle: #5e6b80;
+
+  /* 描边两级（用 alpha 表达，一套值可同时压住深浅两种底） */
+  --qs-border: rgba(255, 255, 255, 0.1);
+  --qs-border-strong: rgba(255, 255, 255, 0.18);
+
+  /* 主色 */
+  --qs-primary: #8fd4ff;
+  --qs-primary-soft: rgba(143, 212, 255, 0.13);
+  --qs-on-primary: #050f1a;
+  --qs-ring: rgba(143, 212, 255, 0.38);
+
+  /* 状态色 */
+  --qs-success: #59d49c;
+  --qs-success-soft: rgba(89, 212, 156, 0.12);
+  --qs-warning: #f5b566;
+  --qs-warning-soft: rgba(245, 181, 102, 0.12);
+  --qs-error: #f27a7a;
+  --qs-error-soft: rgba(242, 122, 122, 0.13);
+  --qs-info: #6bb5ff;
+  --qs-git: #f5b566;
+  --qs-cmd: #6bb5ff;
+
+  /* 阴影 */
+  --qs-window-shadow: 0 16px 36px rgba(0, 0, 0, 0.38);
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+
+  --qs-bg: #e8ebed;
+  --qs-window: #ffffff;
+  --qs-rail: #f7f7fa;
+  --qs-chip: #edf0f5;
+  --qs-code: #f2f5f7;
+
+  --qs-text: #17171c;
+  --qs-text-muted: #667085;
+  --qs-text-subtle: #99a1ad;
+
+  --qs-border: rgba(10, 15, 20, 0.1);
+  --qs-border-strong: rgba(10, 15, 20, 0.18);
+
+  --qs-primary: #0a73b8;
+  --qs-primary-soft: rgba(10, 115, 184, 0.09);
+  --qs-on-primary: #ffffff;
+  --qs-ring: rgba(10, 115, 184, 0.38);
+
+  --qs-success: #1a9c69;
+  --qs-success-soft: rgba(26, 156, 105, 0.1);
+  --qs-warning: #b5730d;
+  --qs-warning-soft: rgba(181, 115, 13, 0.1);
+  --qs-error: #d64545;
+  --qs-error-soft: rgba(214, 69, 69, 0.1);
+  --qs-info: #1a80d4;
+  --qs-git: #b5730d;
+  --qs-cmd: #1a80d4;
+
+  --qs-window-shadow: 0 16px 36px rgba(10, 15, 20, 0.14);
+}
+
+/* 色彩令牌 → Tailwind 命名空间（inline：utilities 内联 var(--qs-*)，随主题实时切换） */
+@theme inline {
+  /* 语义别名（沿用既有组件在用的名字，重定时自动获得浅色支持） */
+  --color-background: var(--qs-bg);
+  --color-foreground: var(--qs-text);
+  --color-card: var(--qs-window);
+  --color-card-foreground: var(--qs-text);
+  --color-popover: var(--qs-rail);
+  --color-popover-foreground: var(--qs-text);
+  --color-muted: var(--qs-chip);
+  --color-muted-foreground: var(--qs-text-muted);
+  --color-border: var(--qs-border);
+  --color-input: var(--qs-border);
+  --color-ring: var(--qs-ring);
+  --color-surface-2: var(--qs-rail);
+  --color-surface-3: var(--qs-chip);
+
+  /* 主色 */
+  --color-primary: var(--qs-primary);
+  --color-primary-foreground: var(--qs-on-primary);
+  --color-primary-soft: var(--qs-primary-soft);
+  --color-on-primary: var(--qs-on-primary);
+
+  /* 表面层级（设计稿命名） */
+  --color-window: var(--qs-window);
+  --color-rail: var(--qs-rail);
+  --color-chip: var(--qs-chip);
+  --color-code: var(--qs-code);
+
+  /* 文字 */
+  --color-subtle: var(--qs-text-subtle);
+  --color-border-strong: var(--qs-border-strong);
+
+  /* 状态 */
+  --color-state-success: var(--qs-success);
+  --color-state-success-soft: var(--qs-success-soft);
+  --color-state-warning: var(--qs-warning);
+  --color-state-warning-soft: var(--qs-warning-soft);
+  --color-state-error: var(--qs-error);
+  --color-state-error-soft: var(--qs-error-soft);
+  --color-state-info: var(--qs-info);
+  --color-state-git: var(--qs-git);
+  --color-state-cmd: var(--qs-cmd);
+}
+
+/* 静态令牌 */
+@theme {
   --radius-sm: 6px;
   --radius-md: 12px;
   --radius-lg: 16px;
@@ -31,9 +142,8 @@
 }
 
 :root {
-  color-scheme: dark;
   font-family: var(--font-sans);
-  background: var(--color-background);
+  background: var(--qs-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   font-optical-sizing: auto;
@@ -66,11 +176,12 @@ body,
 
 body {
   overflow: hidden;
-  background: var(--color-background);
-  color: var(--color-foreground);
+  background: var(--qs-bg);
+  color: var(--qs-text);
   font-size: 13px;
   line-height: 1.35;
   letter-spacing: 0;
+  transition: background-color 160ms ease, color 160ms ease;
 }
 
 button,
@@ -104,7 +215,7 @@ button {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--qs-border-strong);
   border-radius: 999px;
 }
 
@@ -124,15 +235,13 @@ button {
   align-items: center;
   justify-content: center;
   padding: 0 7px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--qs-border-strong);
   border-bottom-width: 2px;
-  border-bottom-color: rgba(0, 0, 0, 0.55);
+  border-bottom-color: var(--qs-border-strong);
   border-radius: 6px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.02) 100%),
-    #171d28;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 1px 2px rgba(0, 0, 0, 0.4);
-  color: #eef3fb;
+  background: var(--qs-chip);
+  box-shadow: inset 0 1px 0 var(--qs-border);
+  color: var(--qs-text);
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
@@ -141,7 +250,7 @@ button {
 }
 
 .qs-kbd-sep {
-  color: var(--color-muted-foreground);
+  color: var(--qs-text-muted);
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 500;
@@ -150,9 +259,9 @@ button {
 .capture-glow {
   border-radius: 10px;
   box-shadow:
-    0 0 0 1px rgba(143, 211, 255, 0.18),
-    0 0 0 3px rgba(143, 211, 255, 0.05),
-    0 0 14px rgba(143, 211, 255, 0.1);
+    0 0 0 1px var(--qs-primary-soft),
+    0 0 0 3px var(--qs-primary-soft),
+    0 0 14px var(--qs-primary-soft);
 }
 
 .pulse-dot {
@@ -162,7 +271,7 @@ button {
   height: 8px;
   flex-shrink: 0;
   border-radius: 9999px;
-  background-color: var(--color-primary);
+  background-color: var(--qs-primary);
 }
 
 .pulse-dot::after {
@@ -170,7 +279,7 @@ button {
   inset: 0;
   content: "";
   border-radius: 9999px;
-  background-color: var(--color-primary);
+  background-color: var(--qs-primary);
   opacity: 0.5;
   animation: qs-pulse 1.6s ease-out infinite;
 }
@@ -178,4 +287,11 @@ button {
 @keyframes qs-pulse {
   0% { transform: scale(1); opacity: 0.5; }
   80%, 100% { transform: scale(2.6); opacity: 0; }
+}
+
+/* 主题切换时避免整页闪烁 */
+@media (prefers-reduced-motion: reduce) {
+  body {
+    transition: none;
+  }
 }

@@ -8,6 +8,25 @@ export interface ShellProfile {
   available: boolean;
 }
 
+/**
+ * 扩展参数：每条命令至多一个，占位符固定为 {{ext}}。
+ * - increment：数字递增，每次成功运行后按步长自动前进；
+ * - input：每次运行时弹框输入数字/字母，自动带入上次取值。
+ */
+export type CommandExtensionMode = 'increment' | 'input';
+
+export interface CommandExtension {
+  mode: CommandExtensionMode;
+  /** increment 模式：首次运行使用的起始值。 */
+  start: number;
+  /** increment 模式：每次成功运行后的递增步长。 */
+  step: number;
+}
+
+/**
+ * 命令配置只保留快捷运行所需的最小字段。
+ * 命令文本中的 {{参数名}} 占位符在运行时提示填写，无需单独的参数配置。
+ */
 export interface CommandProfile {
   id: string;
   name: string;
@@ -15,14 +34,32 @@ export interface CommandProfile {
   shellId: ShellId;
   cwd: string;
   pinned: boolean;
-  confirmBeforeRun: boolean;
+  extension?: CommandExtension;
+}
+
+/** 每条命令上一次运行的参数取值，用于下次启动自动带入。 */
+export type CommandRuntimeValues = Record<string, Record<string, string>>;
+
+export interface CommandExecutionResult {
+  started: boolean;
+  success?: boolean | null;
+  exitCode?: number | null;
 }
 
 export interface AppSettings {
-  fontSize: number;
-  scrollback: number;
-  theme: 'dark' | 'light';
+  /**
+   * 主题偏好。运行时以 localStorage 为准（见 features/theme/theme.ts），
+   * 这里保留字段是为了与 Rust 侧 AppSettings 结构保持一致。
+   */
+  theme: ThemeMode;
   globalShortcut: string;
+}
+
+/** 主题三态：跟随系统 / 浅色 / 深色。 */
+export type ThemeMode = 'system' | 'light' | 'dark';
+
+export interface ThemeChangeRequest {
+  theme: ThemeMode;
 }
 
 export interface ShortcutChangeRequest {
@@ -36,10 +73,8 @@ export interface ShortcutChangeResult {
 }
 
 export const defaultSettings: AppSettings = {
-  fontSize: 14,
-  scrollback: 5000,
-  theme: 'dark',
-  globalShortcut: 'CommandOrControl+Shift+Space',
+  theme: 'system',
+  globalShortcut: 'CommandOrControl+Space',
 };
 
 export const defaultCommands: CommandProfile[] = [
@@ -50,7 +85,6 @@ export const defaultCommands: CommandProfile[] = [
     shellId: 'powershell',
     cwd: '',
     pinned: true,
-    confirmBeforeRun: false,
   },
   {
     id: 'git-status',
@@ -59,7 +93,6 @@ export const defaultCommands: CommandProfile[] = [
     shellId: 'git-bash',
     cwd: '',
     pinned: false,
-    confirmBeforeRun: false,
   },
   {
     id: 'open-cmd',
@@ -68,6 +101,5 @@ export const defaultCommands: CommandProfile[] = [
     shellId: 'cmd',
     cwd: '',
     pinned: false,
-    confirmBeforeRun: false,
   },
 ];

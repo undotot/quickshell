@@ -6,7 +6,8 @@ interface ConfirmDialogProps {
   open: boolean;
   title: string;
   description: string;
-  commandText: string;
+  commandText?: string;
+  confirmLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -20,6 +21,7 @@ export function ConfirmDialog({
   title,
   description,
   commandText,
+  confirmLabel = '确认执行',
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -80,12 +82,14 @@ export function ConfirmDialog({
             <p id="confirm-dialog-description" className="mt-1 text-[11px] leading-4 text-muted-foreground">
               {description}
             </p>
-            <code
-              title={commandText}
-              className="mt-2 block truncate rounded-md border border-border bg-input px-2 py-1.5 font-mono text-[10px] leading-4 text-foreground"
-            >
-              {commandText}
-            </code>
+            {commandText ? (
+              <code
+                title={commandText}
+                className="mt-2 block truncate rounded-md border border-border bg-input px-2 py-1.5 font-mono text-[10px] leading-4 text-foreground"
+              >
+                {commandText}
+              </code>
+            ) : null}
           </div>
         </div>
 
@@ -103,7 +107,7 @@ export function ConfirmDialog({
             onClick={onConfirm}
             className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-ring"
           >
-            确认执行
+            {confirmLabel}
           </button>
         </div>
       </section>

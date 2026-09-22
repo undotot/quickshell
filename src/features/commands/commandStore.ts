@@ -4,7 +4,8 @@ import {
   type CommandProfile,
   type ShellProfile,
 } from '../shared/types';
-import { detectShells, loadCommandProfiles, notifyCommandsChanged, saveCommandProfiles } from '../shared/tauri';
+import { normalizeCommandProfile } from './commandTemplate';
+import { detectShells, isDesktopRuntime, loadCommandProfiles, notifyCommandsChanged, saveCommandProfiles } from '../shared/tauri';
 
 export class CommandStore {
   commands: CommandProfile[] = [];
@@ -42,7 +43,7 @@ export class CommandStore {
 
   async reloadCommands(): Promise<void> {
     try {
-      const commands = await loadCommandProfiles();
+      const commands = (await loadCommandProfiles()).map(normalizeCommandProfile);
       runInAction(() => {
         this.commands = commands;
         this.errorMessage = '';
@@ -59,7 +60,8 @@ export class CommandStore {
     this.errorMessage = '';
 
     try {
-      const [shells, commands] = await Promise.all([detectShells(), loadCommandProfiles()]);
+      const [shells, loadedCommands] = await Promise.all([detectShells(), loadCommandProfiles()]);
+      const commands = loadedCommands.map(normalizeCommandProfile);
       runInAction(() => {
         this.shells = shells;
         this.commands = commands;
@@ -69,16 +71,20 @@ export class CommandStore {
       runInAction(() => {
         this.shells = this.fallbackShells();
         this.commands = defaultCommands;
-        this.errorMessage = error instanceof Error ? error.message : '无法加载本地配置。';
+        // 纯浏览器预览下走回退数据即可，不展示桌面运行时报错。
+        if (isDesktopRuntime()) {
+          this.errorMessage = error instanceof Error ? error.message : '无法加载本地配置。';
+        }
         this.isLoading = false;
       });
     }
   }
 
   async save(command: CommandProfile): Promise<boolean> {
-    const nextCommands = this.commands.some((item) => item.id === command.id)
-      ? this.commands.map((item) => (item.id === command.id ? command : item))
-      : [...this.commands, command];
+    const normalizedCommand = normalizeCommandProfile(command);
+    const nextCommands = this.commands.some((item) => item.id === normalizedCommand.id)
+      ? this.commands.map((item) => (item.id === normalizedCommand.id ? normalizedCommand : item))
+      : [...this.commands, normalizedCommand];
 
     this.isSaving = true;
     this.errorMessage = '';

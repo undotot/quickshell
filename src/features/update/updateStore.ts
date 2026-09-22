@@ -58,6 +58,7 @@ class UpdateStore {
         this.status = update ? 'available' : 'idle';
       });
     } catch (error) {
+          console.log("🚀 ~ UpdateStore ~ checkForUpdates ~ error:", error)
       runInAction(() => {
         this.status = 'error';
         this.errorMessage = error instanceof Error ? error.message : '检查更新失败。';
